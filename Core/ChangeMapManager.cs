@@ -2,11 +2,31 @@
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Menu;
+using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Admin;
 
 namespace cs2_rockthevote
 {
     public partial class Plugin
     {
+        [RequiresPermissions("@css/changemap")]
+        [CommandHelper(1, "css_setnextmap <map>")]
+        [ConsoleCommand("css_setnextmap")]
+        public void SetNextMapCommand(CCSPlayerController? client, CommandInfo info)
+        {
+            var map = info.GetArg(1);
+            _changeMapManager.SetNextMap(client, map);
+        }
+
+        [RequiresPermissions("@css/changemap")]
+        [CommandHelper(1, "css_map <map>")]
+        [ConsoleCommand("css_map")]
+        public void MapCommand(CCSPlayerController? client, CommandInfo info)
+        {
+            var map = info.GetArg(1);
+            _changeMapManager.ForceChangeMap(client, map);
+        }
+
         [GameEventHandler(HookMode.Post)]
         public HookResult OnRoundEndMapChanger(EventRoundEnd @event, GameEventInfo info)
         {
@@ -50,6 +70,34 @@ namespace cs2_rockthevote
             _maps = maps;
         }
 
+        public void SetNextMap(CCSPlayerController? client, string map)
+        {
+            var result = _maps.FirstOrDefault(x => x.Name.Contains(map));
+
+            if(result == null)
+            {
+                client?.PrintToChat(_localizer.LocalizeWithPrefixInternal("rtv.prefix", "general.map-not-found", map));
+                return;
+            }
+
+            ScheduleMapChange(result.Name);
+            Server.PrintToChatAll(_localizer.LocalizeWithPrefixInternal("rtv.prefix", "general.next-map-set", result.Name));
+        }
+
+        public void ForceChangeMap(CCSPlayerController? client, string map)
+        {
+            var result = _maps.FirstOrDefault(x => x.Name.Contains(map));
+
+            if(result == null)
+            {
+                client?.PrintToChat(_localizer.LocalizeWithPrefixInternal("rtv.prefix", "general.map-not-found", map));
+                return;
+            }
+
+            ScheduleMapChange(result.Name);
+            ChangeNextMap(false, true);
+        }
+
 
         public void ScheduleMapChange(string map, bool mapEnd = false, string prefix = DEFAULT_PREFIX)
         {
@@ -65,12 +113,12 @@ namespace cs2_rockthevote
             _prefix = DEFAULT_PREFIX;
         }
 
-        public bool ChangeNextMap(bool mapEnd = false)
+        public bool ChangeNextMap(bool mapEnd = false, bool force = false)
         {
-            if (mapEnd != _mapEnd)
+            if (mapEnd != _mapEnd && !force)
                 return false;
 
-            if (!_pluginState.MapChangeScheduled)
+            if (!_pluginState.MapChangeScheduled && !force)
                 return false;
 
             _pluginState.MapChangeScheduled = false;
