@@ -64,13 +64,32 @@ namespace cs2_rockthevote
         public void OnMapsLoaded(object? sender, Map[] maps)
         {
             nominationMenu = new("Nomination");
-            foreach (var map in _mapLister.Maps!.Where(x => x.Name != Server.MapName))
+            foreach (var map in _mapLister.Maps!)
             {
-                nominationMenu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
+                if(map.Name == Server.MapName)
                 {
-                    Nominate(player, option.Text);
-                }, _mapCooldown.IsMapInCooldown(map.Name));
+                    nominationMenu.AddMenuOption($"{map.Name} (Current Map)", (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, true);
+                    continue;
+                }
+
+                // if map is in cooldown, we add it to the menu with a cooldown message
+                if(_mapCooldown.IsMapInCooldown(map.Name) && _mapCooldown.GetMapCooldown(map.Name) != -1)
+                    nominationMenu.AddMenuOption($"{map.Name} (Recent Played {_mapCooldown.GetMapCooldown(map.Name)})", (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, true);
+
+                // if map is not in cooldown, we add it to the menu
+                else
+                    nominationMenu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, false);
             }
+            nominationMenu.ExitButton = true;
         }
 
         public void CommandHandler(CCSPlayerController? player, string map)

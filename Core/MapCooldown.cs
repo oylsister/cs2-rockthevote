@@ -17,6 +17,11 @@ namespace cs2_rockthevote.Core
             //this is called on map start
             mapLister.EventMapsLoaded += (e, maps) =>
             {
+                EventCooldownRefreshed?.Invoke(this, maps);
+            };
+
+            mapLister.EventMapsEnd += (e, maps) =>
+            {
                 var map = Server.MapName;
                 if(map is not null)
                 {
@@ -46,7 +51,14 @@ namespace cs2_rockthevote.Core
                             mapsOnCoolDown.Remove(mapToRemove);
                     }
 
-                    mapsOnCoolDown.Add(map.Trim().ToLower(), InCoolDown);
+                    // if map is already in cooldown list, then we just set it to the new cooldown
+                    if (mapsOnCoolDown.ContainsKey(map.Trim().ToLower()))
+                        mapsOnCoolDown[map.Trim().ToLower()] = InCoolDown;
+
+                    // add map to cooldown list
+                    else
+                        mapsOnCoolDown.Add(map.Trim().ToLower(), InCoolDown);
+
                     EventCooldownRefreshed?.Invoke(this, maps);
                     SaveCooldownData();
                 }
@@ -64,6 +76,8 @@ namespace cs2_rockthevote.Core
             {
                 File.WriteAllText(cooldownFilePath, "{}");
             }
+
+            LoadCooldownData();
         }
 
         public void LoadCooldownData()
@@ -89,7 +103,18 @@ namespace cs2_rockthevote.Core
 
         public bool IsMapInCooldown(string map)
         {
-            return mapsOnCoolDown[map] > -1;
+            if(!mapsOnCoolDown.ContainsKey(map))
+                return false;
+
+            return mapsOnCoolDown[map] > 0;
+        }
+
+        public int GetMapCooldown(string map)
+        {
+            if(!mapsOnCoolDown.ContainsKey(map))
+                return -1;
+
+            return mapsOnCoolDown[map];
         }
     }
 }

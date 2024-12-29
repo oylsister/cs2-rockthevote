@@ -8,6 +8,7 @@ namespace cs2_rockthevote
         public bool MapsLoaded { get; private set; } = false;
 
         public event EventHandler<Map[]>? EventMapsLoaded;
+        public event EventHandler<Map[]>? EventMapsEnd;
 
         private Plugin? _plugin;
 
@@ -46,12 +47,23 @@ namespace cs2_rockthevote
                 EventMapsLoaded.Invoke(this, Maps!);
         }
 
+        void EndMap()
+        {
+            if (EventMapsEnd is not null)
+                EventMapsEnd.Invoke(this, Maps!);
+        }
+
         public void OnMapStart(string _map)
         {
             if (_plugin is not null)
                 LoadMaps();
         }
 
+        public void OnMapEnd()
+        {
+            if (_plugin is not null)
+                EndMap();
+        }
 
         public void OnLoad(Plugin plugin)
         {

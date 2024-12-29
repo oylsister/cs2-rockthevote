@@ -47,6 +47,14 @@ namespace cs2_rockthevote
             }
         }
 
+        public void OnMapEnd()
+        {
+            foreach (var service in Dependencies)
+            {
+                service.OnMapEnd();
+            }
+        }
+
         public void OnPluginLoad(TPlugin plugin)
         {
             foreach (var service in Dependencies)

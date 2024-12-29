@@ -20,10 +20,10 @@ namespace cs2_rockthevote
 
     public partial class Plugin : BasePlugin, IPluginConfig<Config>
     {
-        public override string ModuleName => "RockTheVote";
-        public override string ModuleVersion => "1.8.5";
-        public override string ModuleAuthor => "abnerfs";
-        public override string ModuleDescription => "https://github.com/abnerfs/cs2-rockthevote";
+        public override string ModuleName => "RockTheVote Extended";
+        public override string ModuleVersion => "2.0.0";
+        public override string ModuleAuthor => "abnerfs, Oylsister";
+        public override string ModuleDescription => "https://github.com/oylsister/cs2-rockthevote";
 
 
         private readonly DependencyManager<Plugin, Config> _dependencyManager;
@@ -61,6 +61,7 @@ namespace cs2_rockthevote
         {
             _dependencyManager.OnPluginLoad(this);
             RegisterListener<OnMapStart>(_dependencyManager.OnMapStart);
+            RegisterListener<OnMapEnd>(_dependencyManager.OnMapEnd);
         }
 
         [GameEventHandler(HookMode.Post)]
