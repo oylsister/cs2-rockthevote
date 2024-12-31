@@ -31,14 +31,14 @@ namespace cs2_rockthevote
 
     public class NominationCommand : IPluginDependency<Plugin, Config>
     {
-        Dictionary<int, List<string>> Nominations = new();
-        ChatMenu? nominationMenu = null;
+        Dictionary<CCSPlayerController, string> Nominations = new();
         private RtvConfig _config = new();
         private GameRules _gamerules;
         private StringLocalizer _localizer;
         private PluginState _pluginState;
         private MapCooldown _mapCooldown;
         private MapLister _mapLister;
+        private List<string> _nominatedMaps = new();
 
         public NominationCommand(MapLister mapLister, GameRules gamerules, StringLocalizer localizer, PluginState pluginState, MapCooldown mapCooldown)
         {
@@ -54,6 +54,7 @@ namespace cs2_rockthevote
         public void OnMapStart(string map)
         {
             Nominations.Clear();
+            _nominatedMaps.Clear();
         }
 
         public void OnConfigParsed(Config config)
@@ -63,6 +64,7 @@ namespace cs2_rockthevote
 
         public void OnMapsLoaded(object? sender, Map[] maps)
         {
+            /*
             nominationMenu = new("Nomination");
             foreach (var map in _mapLister.Maps!)
             {
@@ -90,6 +92,7 @@ namespace cs2_rockthevote
                     }, false);
             }
             nominationMenu.ExitButton = true;
+            */
         }
 
         public void CommandHandler(CCSPlayerController? player, string map)
@@ -124,6 +127,12 @@ namespace cs2_rockthevote
                 return;
             }
 
+            if(_nominatedMaps.Count >= _config.MaxNominateMap)
+            {
+                player.PrintToChat(_localizer.LocalizeWithPrefix("general.validation.max-nominate-reach", _config.MaxNominateMap));
+                return;
+            }
+
             if (string.IsNullOrEmpty(map))
             {
                 OpenNominationMenu(player!);
@@ -136,7 +145,34 @@ namespace cs2_rockthevote
 
         public void OpenNominationMenu(CCSPlayerController player)
         {
-            MenuManager.OpenChatMenu(player!, nominationMenu!);
+            // MenuManager.OpenChatMenu(player!, nominationMenu!);
+            var menu = new ChatMenu("Nomination");
+            foreach (var map in _mapLister.Maps!)
+            {
+                if(map.Name == Server.MapName)
+                {
+                    menu.AddMenuOption($"{map.Name} (Current Map)", (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, true);
+                    continue;
+                }
+
+                // if map is in cooldown, we add it to the menu with a cooldown message
+                if(_mapCooldown.IsMapInCooldown(map.Name) && _mapCooldown.GetMapCooldown(map.Name) != -1)
+                    menu.AddMenuOption($"{map.Name} (Recent Played {_mapCooldown.GetMapCooldown(map.Name)})", (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, true);
+
+                // if map is not in cooldown, we add it to the menu
+                else
+                    menu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
+                    {
+                        Nominate(player, option.Text);
+                    }, false);
+            }
+            menu.ExitButton = true;
         }
 
         void Nominate(CCSPlayerController player, string map)
@@ -160,45 +196,48 @@ namespace cs2_rockthevote
 
             }
 
-            var userId = player.UserId!.Value;
-            if (!Nominations.ContainsKey(userId))
-                Nominations[userId] = new();
+            if(_nominatedMaps.Contains(map))
+            {
+                player!.PrintToChat(_localizer.LocalizeWithPrefix("general.validation.already-nominated", map));
+                return;
+            }
 
-            bool alreadyVoted = Nominations[userId].IndexOf(map) != -1;
-            if (!alreadyVoted)
-                Nominations[userId].Add(map);
+            if(player == null)
+                return;
 
-            var totalVotes = Nominations.Select(x => x.Value.Where(y => y == map).Count())
-                .Sum();
+            if (!Nominations.ContainsKey(player))
+                Nominations.Add(player, map);
 
-            if (!alreadyVoted)
-                Server.PrintToChatAll(_localizer.LocalizeWithPrefix("nominate.nominated", player.PlayerName, map, totalVotes));
-            else
-                player.PrintToChat(_localizer.LocalizeWithPrefix("nominate.already-nominated", map, totalVotes));
+            // if player is in nomination list, then we have to remove previous nomination from _nominatedMaps list.
+            if (Nominations.ContainsKey(player) && _nominatedMaps.Contains(Nominations[player]))
+                _nominatedMaps.Remove(Nominations[player]);
+
+            Nominations[player] = map;
+            _nominatedMaps.Add(map);
+
+            Server.PrintToChatAll(_localizer.LocalizeWithPrefix("nominate.nominated", player.PlayerName, map));
         }
 
-        public List<string> NominationWinners()
+        public List<string> GetNominationList()
         {
-            if (Nominations.Count == 0)
-                return new List<string>();
-
-            var rawNominations = Nominations
-                .Select(x => x.Value)
-                .Aggregate((acc, x) => acc.Concat(x).ToList());
-
-            return rawNominations
-                .Distinct()
-                .Select(map => new KeyValuePair<string, int>(map, rawNominations.Count(x => x == map)))
-                .OrderByDescending(x => x.Value)
-                .Select(x => x.Key)
-                .ToList();
+            return _nominatedMaps;
         }
 
         public void PlayerDisconnected(CCSPlayerController player)
         {
-            int userId = player.UserId!.Value;
-            if (!Nominations.ContainsKey(userId))
-                Nominations.Remove(userId);
+            if (Nominations.ContainsKey(player))
+            {
+                if(_nominatedMaps.Contains(Nominations[player]))
+                    _nominatedMaps.Remove(Nominations[player]);
+
+                Nominations.Remove(player);
+            }
+        }
+
+        public void NominationOnVoteEnd()
+        {
+            Nominations.Clear();
+            _nominatedMaps.Clear();
         }
     }
 }

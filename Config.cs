@@ -44,6 +44,7 @@ namespace cs2_rockthevote
         public bool Enabled { get; set; } = true;
         public bool EnabledInWarmup { get; set; } = true;
         public bool NominationEnabled { get; set; } = true;
+        public int MaxNominateMap { get; set; } = 6;
         public int MinPlayers { get; set; } = 0;
         public int MinRounds { get; set; } = 0;
         public bool ChangeMapImmediatly { get; set; } = true;

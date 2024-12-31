@@ -138,6 +138,8 @@ namespace cs2_rockthevote
             Random rnd = new();
             KeyValuePair<string, int> winner = potentialWinners.ElementAt(rnd.Next(0, potentialWinners.Count()));
 
+            _nominationManager.NominationOnVoteEnd();
+
             decimal totalVotes = Votes.Select(x => x.Value).Sum();
             decimal percent = totalVotes > 0 ? winner.Value / totalVotes * 100M : 0;
 
@@ -186,7 +188,7 @@ namespace cs2_rockthevote
                 mapsToShow = MAX_OPTIONS_HUD_MENU;
 
             var mapsScrambled = Shuffle(new Random(), _mapLister.Maps!.Select(x => x.Name).Where(x => x != Server.MapName && !_mapCooldown.IsMapInCooldown(x)).ToList());
-            mapsEllected = _nominationManager.NominationWinners().Concat(mapsScrambled).Distinct().ToList();
+            mapsEllected = _nominationManager.GetNominationList().Concat(mapsScrambled).Distinct().ToList();
 
             _canVote = ServerManager.ValidPlayerCount();
             ChatMenu menu = new(_localizer.Localize("emv.hud.menu-title"));
