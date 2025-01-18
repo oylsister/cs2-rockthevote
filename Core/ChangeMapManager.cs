@@ -33,13 +33,6 @@ namespace cs2_rockthevote
             _changeMapManager.ChangeNextMap();
             return HookResult.Continue;
         }
-
-        [GameEventHandler(HookMode.Post)]
-        public HookResult OnRoundStartMapChanger(EventRoundStart @event, GameEventInfo info)
-        {
-            _changeMapManager.ChangeNextMap();
-            return HookResult.Continue;
-        }
     }
 
     public class ChangeMapManager : IPluginDependency<Plugin, Config>
@@ -115,10 +108,10 @@ namespace cs2_rockthevote
 
         public bool ChangeNextMap(bool mapEnd = false, bool force = false)
         {
-            if (mapEnd != _mapEnd && !force)
+            if (mapEnd != _mapEnd && !force && !RockTheVoteCommand.ChangeOnRoundEnd)
                 return false;
 
-            if (!_pluginState.MapChangeScheduled && !force)
+            if (!_pluginState.MapChangeScheduled && !force && !RockTheVoteCommand.ChangeOnRoundEnd)
                 return false;
 
             _pluginState.MapChangeScheduled = false;

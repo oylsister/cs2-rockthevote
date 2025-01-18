@@ -32,6 +32,7 @@ namespace cs2_rockthevote
         private RtvConfig _config = new();
         private AsyncVoteManager? _voteManager;
         public bool VotesAlreadyReached => _voteManager!.VotesAlreadyReached;
+        public static bool ChangeOnRoundEnd = false;
 
         public RockTheVoteCommand(GameRules gameRules, EndMapVoteManager endmapVoteManager, StringLocalizer localizer, PluginState pluginState)
         {
@@ -44,6 +45,7 @@ namespace cs2_rockthevote
         public void OnMapStart(string map)
         {
             _voteManager!.OnMapStart(map);
+            ChangeOnRoundEnd = false;
         }
 
         public void CommandHandler(CCSPlayerController? player)

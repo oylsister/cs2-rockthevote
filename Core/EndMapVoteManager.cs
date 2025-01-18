@@ -154,12 +154,16 @@ namespace cs2_rockthevote
 
             PrintCenterTextAll(_localizer.Localize("emv.hud.finished", winner.Key));
             _changeMapManager.ScheduleMapChange(winner.Key, mapEnd: mapEnd);
-            if (_config!.ChangeMapImmediatly)
+            if (_config!.ChangeMapImmediatly == ChangeModeEnum.Instant)
                 _changeMapManager.ChangeNextMap(mapEnd);
             else
             {
-                if (!mapEnd)
-                    Server.PrintToChatAll(_localizer.LocalizeWithPrefix("general.changing-map-next-round", winner.Key));
+                if(_config!.ChangeMapImmediatly == ChangeModeEnum.RoundEnd)
+                    RockTheVoteCommand.ChangeOnRoundEnd = true;
+
+                else
+                    if (!mapEnd)
+                        Server.PrintToChatAll(_localizer.LocalizeWithPrefix("general.changing-map-next-round", winner.Key));
             }
         }
 
