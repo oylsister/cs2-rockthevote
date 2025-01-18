@@ -31,8 +31,10 @@ namespace cs2_rockthevote
         private PluginState _pluginState;
         private RtvConfig _config = new();
         private AsyncVoteManager? _voteManager;
-        public bool VotesAlreadyReached => _voteManager!.VotesAlreadyReached;
+        public bool VotesAlreadyReached => AsyncVoteManager.VotesAlreadyReached;
         public static bool ChangeOnRoundEnd = false;
+        public static float AvailableRTV = 0f;
+        public static float AfterVoteTime;
 
         public RockTheVoteCommand(GameRules gameRules, EndMapVoteManager endmapVoteManager, StringLocalizer localizer, PluginState pluginState)
         {
@@ -46,6 +48,8 @@ namespace cs2_rockthevote
         {
             _voteManager!.OnMapStart(map);
             ChangeOnRoundEnd = false;
+            AvailableRTV = Server.CurrentTime + _config.TimeAllowRTVAfterMapStart;
+            AfterVoteTime = _config.TimeAllowRTVAfterVote;
         }
 
         public void CommandHandler(CCSPlayerController? player)
@@ -53,7 +57,7 @@ namespace cs2_rockthevote
             if (player is null)
                 return;
 
-            if (_pluginState.DisableCommands || !_config.Enabled)
+            if (_pluginState.DisableCommands || !_config.Enabled || Server.CurrentTime < AvailableRTV)
             {
                 player.PrintToChat(_localizer.LocalizeWithPrefix("general.validation.disabled"));
                 return;
@@ -94,7 +98,7 @@ namespace cs2_rockthevote
                 case VoteResultEnum.VotesReached:
                     Server.PrintToChatAll($"{_localizer.LocalizeWithPrefix("rtv.rocked-the-vote", player.PlayerName)} {_localizer.Localize("general.votes-needed", result.VoteCount, result.RequiredVotes)}");
                     Server.PrintToChatAll(_localizer.LocalizeWithPrefix("rtv.votes-reached"));
-                    _endmapVoteManager.StartVote(_config);
+                    _endmapVoteManager.StartVote(_config, _config.AllowNoChangeMap);
                     break;
             }
         }

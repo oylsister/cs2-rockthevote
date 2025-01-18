@@ -31,7 +31,10 @@ namespace cs2_rockthevote
         public bool Enabled { get; set; } = true;
         public int MapsToShow { get; set; } = 6;
         public bool HudMenu { get; set; } = true;
+
+        [JsonConverter(typeof(ChangeModeEnumConverter))]
         public ChangeModeEnum ChangeMapImmediatly { get; set; } = ChangeModeEnum.EndOfMap;
+
         public int VoteDuration { get; set; } = 30;
         public bool HideHudAfterVote { get; set; } = false;
         public int TriggerSecondsBeforeEnd { get; set; } = 120;
@@ -47,7 +50,13 @@ namespace cs2_rockthevote
         public int MaxNominateMap { get; set; } = 6;
         public int MinPlayers { get; set; } = 0;
         public int MinRounds { get; set; } = 0;
+        public bool AllowNoChangeMap { get ; set; } = true;
+        public float TimeAllowRTVAfterMapStart { get; set; } = 30f;
+        public float TimeAllowRTVAfterVote { get; set; } = 30f;
+
+        [JsonConverter(typeof(ChangeModeEnumConverter))]
         public ChangeModeEnum ChangeMapImmediatly { get; set; } = ChangeModeEnum.RoundEnd;
+
         public bool HideHudAfterVote { get; set; } = false;
         public int MapsToShow { get; set; } = 6;
         public int VoteDuration { get; set; } = 30;
@@ -59,7 +68,10 @@ namespace cs2_rockthevote
     {
         public bool Enabled { get; set; } = true;
         public int VotePercentage { get; set; } = 60;
+
+        [JsonConverter(typeof(ChangeModeEnumConverter))]
         public ChangeModeEnum ChangeMapImmediatly { get; set; } = ChangeModeEnum.EndOfMap;
+
         public bool EnabledInWarmup { get; set; } = true;
         public int MinPlayers { get; set; } = 0;
         public int MinRounds { get; set; } = 0;

@@ -5,7 +5,7 @@
 
     public class AsyncVoteManager
     {
-        private List<int> votes = new();
+        public static List<int> votes = new();
         public int VoteCount => votes.Count;
         public int RequiredVotes => _voteValidator.RequiredVotes;
 
@@ -22,7 +22,7 @@
 
         private readonly AsyncVoteValidator _voteValidator;
 
-        public bool VotesAlreadyReached { get; set; } = false;
+        public static bool VotesAlreadyReached { get; set; } = false;
 
         public VoteResult AddVote(int userId)
         {

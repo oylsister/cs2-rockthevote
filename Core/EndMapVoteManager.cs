@@ -153,6 +153,16 @@ namespace cs2_rockthevote
             }
 
             PrintCenterTextAll(_localizer.Localize("emv.hud.finished", winner.Key));
+
+            // if don't change win, then don't change lol.
+            if(winner.Key == "Don't Change")
+            {
+                AsyncVoteManager.VotesAlreadyReached = false;
+                AsyncVoteManager.votes.Clear();
+                RockTheVoteCommand.AvailableRTV = Server.CurrentTime + RockTheVoteCommand.AfterVoteTime;
+                return;
+            }
+
             _changeMapManager.ScheduleMapChange(winner.Key, mapEnd: mapEnd);
             if (_config!.ChangeMapImmediatly == ChangeModeEnum.Instant)
                 _changeMapManager.ChangeNextMap(mapEnd);
@@ -180,7 +190,7 @@ namespace cs2_rockthevote
             return array;
         }
 
-        public void StartVote(IEndOfMapConfig config)
+        public void StartVote(IEndOfMapConfig config, bool rtv = false)
         {
             Votes.Clear();
             _voted.Clear();
@@ -188,6 +198,10 @@ namespace cs2_rockthevote
             _pluginState.EofVoteHappening = true;
             _config = config;
             int mapsToShow = _config!.MapsToShow == 0 ? MAX_OPTIONS_HUD_MENU : _config!.MapsToShow;
+
+            if(rtv)
+                mapsToShow--;
+
             if (config.HudMenu && mapsToShow > MAX_OPTIONS_HUD_MENU)
                 mapsToShow = MAX_OPTIONS_HUD_MENU;
 
@@ -196,6 +210,16 @@ namespace cs2_rockthevote
 
             _canVote = ServerManager.ValidPlayerCount();
             ChatMenu menu = new(_localizer.Localize("emv.hud.menu-title"));
+
+            if(rtv)
+            {
+                Votes["Don't Change"] = 0;
+                menu.AddMenuOption("Don't Change", (player, option) => {
+                    MapVoted(player, "Don't Change");
+                    MenuManager.CloseActiveMenu(player);
+                });
+            }
+
             foreach (var map in mapsEllected.Take(mapsToShow))
             {
                 Votes[map] = 0;
