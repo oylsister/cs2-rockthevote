@@ -135,7 +135,7 @@ namespace cs2_rockthevote
 
             if (string.IsNullOrEmpty(map))
             {
-                OpenNominationMenu(player!);
+                OpenNominationMenu(player!, "");
             }
             else
             {
@@ -143,36 +143,71 @@ namespace cs2_rockthevote
             }
         }
 
-        public void OpenNominationMenu(CCSPlayerController player)
+        public void OpenNominationMenu(CCSPlayerController player, string mapname = "")
         {
             // MenuManager.OpenChatMenu(player!, nominationMenu!);
             var menu = new ChatMenu("Nomination");
-            foreach (var map in _mapLister.Maps!)
+
+            if(mapname == "")
             {
-                if(map.Name == Server.MapName)
+                foreach (var map in _mapLister.Maps!)
                 {
-                    menu.AddMenuOption($"{map.Name} (Current Map)", (CCSPlayerController player, ChatMenuOption option) =>
+                    if(map.Name == Server.MapName)
                     {
-                        Nominate(player, option.Text);
-                    }, true);
-                    continue;
+                        menu.AddMenuOption($"{map.Name} (Current Map)", (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, true);
+                        continue;
+                    }
+
+                    // if map is in cooldown, we add it to the menu with a cooldown message
+                    if(_mapCooldown.IsMapInCooldown(map.Name) && _mapCooldown.GetMapCooldown(map.Name) != -1)
+                        menu.AddMenuOption($"{map.Name} (Recent Played {_mapCooldown.GetMapCooldown(map.Name)})", (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, true);
+
+                    // if map is not in cooldown, we add it to the menu
+                    else
+                        menu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, false);
                 }
+            }
 
-                // if map is in cooldown, we add it to the menu with a cooldown message
-                if(_mapCooldown.IsMapInCooldown(map.Name) && _mapCooldown.GetMapCooldown(map.Name) != -1)
-                    menu.AddMenuOption($"{map.Name} (Recent Played {_mapCooldown.GetMapCooldown(map.Name)})", (CCSPlayerController player, ChatMenuOption option) =>
+                // we got them bois
+            else 
+            {
+                foreach (var map in _mapLister.Maps!.Where(x => x.Name.Contains(mapname, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if(map.Name == Server.MapName)
                     {
-                        Nominate(player, option.Text);
-                    }, true);
+                        menu.AddMenuOption($"{map.Name} (Current Map)", (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, true);
+                        continue;
+                    }
 
-                // if map is not in cooldown, we add it to the menu
-                else
-                    menu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
-                    {
-                        Nominate(player, option.Text);
-                    }, false);
+                    // if map is in cooldown, we add it to the menu with a cooldown message
+                    if(_mapCooldown.IsMapInCooldown(map.Name) && _mapCooldown.GetMapCooldown(map.Name) != -1)
+                        menu.AddMenuOption($"{map.Name} (Recent Played {_mapCooldown.GetMapCooldown(map.Name)})", (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, true);
+
+                    // if map is not in cooldown, we add it to the menu
+                    else
+                        menu.AddMenuOption(map.Name, (CCSPlayerController player, ChatMenuOption option) =>
+                        {
+                            Nominate(player, option.Text);
+                        }, false);
+                }
             }
             menu.ExitButton = true;
+            menu.Open(player);
         }
 
         void Nominate(CCSPlayerController player, string map)
@@ -192,6 +227,7 @@ namespace cs2_rockthevote
             if (_mapLister.Maps!.Select(x => x.Name).FirstOrDefault(x => x.ToLower() == map) is null)
             {
                 player!.PrintToChat(_localizer.LocalizeWithPrefix("general.invalid-map"));
+                OpenNominationMenu(player!, map);
                 return;
 
             }
